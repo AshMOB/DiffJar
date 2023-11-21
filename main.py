@@ -4,13 +4,14 @@ Author: MOBval
 Github: https://github.com/AshMOB
 Date: 2023-11-21 09:44:46
 LastEditors: Elysi4
-LastEditTime: 2023-11-21 14:05:26
+LastEditTime: 2023-11-21 16:39:47
 '''
 # 功能：将当前目录下的jar包反编译并放入指定目录中，使用git提交，之后提交另一个版本的反编译进行比较
 
 # 环境需求：python3，git，procyon
 
 import argparse
+import re
 import subprocess
 import os
 import zipfile
@@ -18,8 +19,7 @@ def init_git():
     git_path="./out"
     command=f"git init {git_path}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-    process.wait()
-    print(process.stdout.read().decode("utf-8"))
+    process.communicate()
 
 def read_jar_list():
     # 获取当前文件夹的路径
@@ -42,29 +42,42 @@ def compile_jar(jar_name, jar_path):
     for name in jar_name:
         subname=name.replace(".jar","")
         subname=subname.replace(f"{jar_path}/","")
+        #处理一些jar包的版本号，让程序能自动进行文件覆盖
+        # subname = re.sub(r'\d+\.\d+\.\d+$', '', subname)
+        # subname = re.sub(r'\d+\.\d+$', '', subname)
+        subname=re.sub(r'\d+\.\d+\.\d', '', subname)
+        subname=re.sub(r'\d+\.\d', '', subname)
+        subname=re.sub(r'\d', '', subname)
         command=f"java -jar .\procyon-decompiler-0.6.0.jar -jar {name} -o out/{subname}"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         for line in process.stdout:
             print(line.decode().strip())
             print(str(i)+"/"+str(len(jar_name)))
-        process.wait()
+        process.communicate()
         i+=1
         with zipfile.ZipFile(f"{name}", 'r') as zip_file:
             zip_file.extractall(f"out/{subname}")
         for root, dirs, files in os.walk(f"out/{subname}"):
             for file in files:
                 if file.endswith(".class"):
-                    os.remove(os.path.join(root, file))
+                    try:
+                        os.remove(os.path.join(root, file))
+                    except:
+                        pass
+        command="git -C ./out add ."
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+        process.communicate()
+        # print(process.stdout.read().decode("utf-8"))
+        
     
 def git_commit(jar_path):
-    command="git -C ./out add ."
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-    process.wait()
-    print(process.stdout.read().decode("utf-8"))
     command=f'git -C ./out commit --allow-empty -m "{jar_path} version"'
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-    process.wait()
-    print(process.stdout.read().decode("utf-8"))
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(f"Error: {stderr.decode('utf-8')}")
+    else:
+        print(stdout.decode("utf-8"))
 
 def mkdir():
     # 在当前目录下创建名为'f1rst'的文件夹
