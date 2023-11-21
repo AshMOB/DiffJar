@@ -1,0 +1,7 @@
+f1rst/*
+.env/*
+.vscode/
+# .gitignore
+s2cond/*
+./out/
+out/
