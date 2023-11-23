@@ -4,7 +4,7 @@ Author: MOBval
 Github: https://github.com/AshMOB
 Date: 2023-11-21 09:44:46
 LastEditors: Elysi4
-LastEditTime: 2023-11-21 17:55:49
+LastEditTime: 2023-11-23 16:30:36
 '''
 # 功能：将当前目录下的jar包反编译并放入指定目录中，使用git提交，之后提交另一个版本的反编译进行比较
 
@@ -12,6 +12,7 @@ LastEditTime: 2023-11-21 17:55:49
 
 import argparse
 import re
+import shutil
 import subprocess
 import os
 import zipfile
@@ -88,11 +89,23 @@ def mkdir():
     
 def init():
     mkdir()
-    
+#修复文件删除后不能正确覆盖
+def rm_first():
+    for item in os.listdir('out'):
+        item_path = os.path.join('out', item)
+        if os.path.isdir(item_path):
+            if item == '.git':
+                continue
+            else:
+                shutil.rmtree(item_path)
+        else:
+            os.remove(item_path)
+
 def run():
     init_git()
     compile_jar(read_jar_list("f1rst"),"f1rst")
     git_commit("f1rst")
+    rm_first()
     compile_jar(read_jar_list("s2cond"),"s2cond")
     # git_commit("s2cond")
     

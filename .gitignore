@@ -3,5 +3,5 @@ f1rst/*
 .vscode/
 # .gitignore
 s2cond/*
-./out/
-out/
+./out/*
+out/*
